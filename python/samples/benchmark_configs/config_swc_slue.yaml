@@ -1,0 +1,9 @@
+provider: "azure"
+# model: "gpt-4o-realtime-preview-2024-10-01"  # For OpenAI
+test_type: "quality"
+dataset_name: "slue_p2_sqa5_test"
+turn_detection_type: "NoTurnDection"
+n_questions: 200
+n_iterations: 1
+endpoint_region: "swedencentral"
+deployment_name: "3paudiotexttest06"  # Optional, for prod. For JPE, comment out.
