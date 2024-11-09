@@ -194,8 +194,8 @@ if __name__ == "__main__":
         sys.exit(1)
 
     if not os.path.isdir(out_dir):
-        print(f"Directory {out_dir} does not exist")
-        sys.exit(1)
+        print(f"Directory {out_dir} does not exist. Creating one ...")
+        os.makedirs(out_dir, exist_ok=True)
 
     if provider not in ["azure", "openai"]:
         print(f"Provider {provider} needs to be one of 'azure' or 'openai'")
