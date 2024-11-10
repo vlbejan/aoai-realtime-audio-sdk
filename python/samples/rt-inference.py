@@ -1,3 +1,9 @@
+"""
+TODO:
+1. fix the output_jsonl_file since it is not used.
+2. For SLUE, line 138 is the issue. It defaults to None and skips the whole thing. Check no_vad example which is working.
+"""
+
 import asyncio
 import base64
 import json
@@ -127,7 +133,7 @@ class AudioProcessor:
             await client.commit_audio()
             await client.generate_response()
 
-    async def receive_message_item(self, item: RTMessageItem, output_file_name: str):
+    async def receive_message_item(self, item: RTMessageItem, output_file_name: str, request_id: str):
         prefix = f"[response={item.response_id}][item={item.id}]"
         async for contentPart in item:
             if contentPart.type == "audio":
@@ -155,6 +161,22 @@ class AudioProcessor:
                     encoding="utf-8",
                 ) as out:
                     out.write(audio_transcript)
+                    
+                # save output to the common file
+                jsonl_entry = {
+                    "file_name": output_file_name,
+                    "iteration": self.iteration,
+                    "question": self.prompt_question,
+                    "prediction": audio_transcript if (audio_transcript is not None) else "No transcript was returned",
+                    "answer": self.ground_truth,
+                    "item_id": item.id,
+                    "request_id": request_id,
+                    "timestamp": datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S") + " UTC"
+                }
+        
+                with open(self.output_jsonl_file, "a") as out:
+                    out.write(json.dumps(jsonl_entry) + "\n")
+
             elif contentPart.type == "text":
                 text_data = ""
                 async for chunk in contentPart.text_chunks():
@@ -177,7 +199,9 @@ class AudioProcessor:
         async for item in response:
             print(prefix, f"Received item {item.id}")
             if item.type == "message":
-                asyncio.create_task(self.receive_message_item(item, output_file_name))
+                asyncio.create_task(self.receive_message_item(item,
+                                                              output_file_name,
+                                                              request_id=str(client._client.request_id)))
             elif item.type == "function_call":
                 asyncio.create_task(self.receive_function_call_item(item, output_file_name))
         print(prefix, "Response completed")
