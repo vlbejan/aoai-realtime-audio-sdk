@@ -20,6 +20,7 @@ from rtclient import (
     RTMessageItem,
     RTResponse,
 )
+from pickle import TRUE
 
 def resample_audio(audio_data, original_sample_rate, target_sample_rate):
     number_of_samples = round(len(audio_data) * float(target_sample_rate) / original_sample_rate)
@@ -113,6 +114,13 @@ async def receive_input_item(item: RTInputAudioItem):
     print(prefix, f"Audio Start [ms]: {item.audio_start_ms}")
     print(prefix, f"Audio End [ms]: {item.audio_end_ms}")
 
+async def receive_events(client: RTClient, out_dir: str):
+    async for event in client.events():
+        if event.type == "input_audio":
+            asyncio.create_task(receive_input_item(event))
+        elif event.type == "response":
+            asyncio.create_task(receive_response(client, event, out_dir))
+            
 async def run(client: RTClient, audio_file_path: str, instructions_file: str, out_dir: str, use_vad: bool):
     with open(instructions_file) as f:
         instructions = f.read()
@@ -129,13 +137,21 @@ async def run(client: RTClient, audio_file_path: str, instructions_file: str, ou
             input_audio_transcription=InputAudioTranscription(model="whisper-1"),
         )
     print("Done")
-    await send_audio(client, audio_file_path)
-    input_item = await client.commit_audio()
-    response = await client.generate_response()
-    await asyncio.gather(
-        receive_response(client, response, out_dir),
-        receive_input_item(input_item),
-    )
+    
+    if use_vad:
+        await asyncio.gather(
+            send_audio(client, audio_file_path),
+            receive_events(client, out_dir)
+        )
+    else:      
+        await send_audio(client, audio_file_path)
+
+        input_item = await client.commit_audio()
+        response = await client.generate_response()
+        await asyncio.gather(
+            receive_response(client, response, out_dir),
+            receive_input_item(input_item),
+        )
 
 def get_env_var(var_name: str) -> str:
     value = os.environ.get(var_name)
@@ -165,8 +181,9 @@ if __name__ == "__main__":
     file_path = sys.argv[1]
     instructions_file = sys.argv[2]
     out_dir = sys.argv[3]
-    use_vad = True
-    provider = sys.argv[4] if len(sys.argv) == 6 else "azure"
+    use_vad = sys.argv[4]
+    provider = sys.argv[5] if len(sys.argv) == 6 else "azure"
+    
     if not os.path.isfile(file_path):
         print(f"File {file_path} does not exist")
         sys.exit(1)
@@ -179,6 +196,13 @@ if __name__ == "__main__":
     if provider not in ["azure", "openai"]:
         print(f"Provider {provider} needs to be one of 'azure' or 'openai'")
         sys.exit(1)
+
+    if use_vad not in ["true", "false"]:
+        print(f"use_vad value of {use_vad} needs to be one of 'true' or 'false'")
+        sys.exit(1)
+    else:
+        use_vad = True if (use_vad == 'true') else False
+
     if provider == "azure":
         asyncio.run(with_azure_openai(file_path, instructions_file, out_dir, use_vad))
     else:

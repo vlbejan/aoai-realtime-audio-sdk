@@ -129,9 +129,7 @@ class AudioProcessor:
         for i in range(0, len(audio_bytes), bytes_per_chunk):
             chunk = audio_bytes[i : i + bytes_per_chunk]
             await client.send_audio(chunk)
-        if isinstance(self.turn_detection, NoTurnDetection):
-            await client.commit_audio()
-            await client.generate_response()
+
 
     async def receive_message_item(self, item: RTMessageItem, output_file_name: str, request_id: str):
         prefix = f"[response={item.response_id}][item={item.id}]"
@@ -237,10 +235,22 @@ class AudioProcessor:
             input_audio_transcription=InputAudioTranscription(model="whisper-1")
         )
         print("Done")
-        await asyncio.gather(
-            self.send_audio(client),
-            self.receive_messages(client, out_file_name)
-        )
+
+        if isinstance(self.turn_detection, NoTurnDetection):
+            await self.send_audio(client)
+    
+            input_item = await client.commit_audio()
+            response = await client.generate_response()
+            await asyncio.gather(
+                self.receive_response(client, response, out_file_name),
+                self.receive_input_item(input_item),
+            )
+        else:
+            await asyncio.gather(
+                self.send_audio(client),
+                self.receive_messages(client, out_file_name)
+            )            
+
 
     def get_env_var(self, var_name: str) -> str:
         value = os.environ.get(var_name)
