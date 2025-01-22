@@ -138,6 +138,7 @@ async def run(client: RTClient, audio_file_path: str, instructions_file: str, ou
             instructions=instructions,
             turn_detection=NoTurnDetection(),
             input_audio_transcription=InputAudioTranscription(model="whisper-1"),
+            voice=VOICE
         )
         print("Done")
 
@@ -175,6 +176,9 @@ async def with_openai(audio_file_path: str, instructions_file: str, out_dir: str
 
 if __name__ == "__main__":
     load_dotenv()
+    
+    VOICE = 'alloy' # ["alloy", "ash", "ballad", "coral", "echo", "sage", "shimmer", "verse"]
+    
     if len(sys.argv) < 3:
         print(f"Usage: python {sys.argv[0]} <audio_file> <instructions_file> <out_dir> [azure|openai]")
         print("If the fourth argument is not provided, it will default to azure")

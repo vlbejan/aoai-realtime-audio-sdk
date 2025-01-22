@@ -276,7 +276,7 @@ if __name__ == "__main__":
     provider = "azure"
     turn_detection_type = NoTurnDetection()
     test_type = "parity"
-    endpoint_region = "swedencentral"
+    endpoint_region = "japaneast"
     dataset_name = "cn_college_listen_test"
     n_questions = 2
     n_iterations = 3

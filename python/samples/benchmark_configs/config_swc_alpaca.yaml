@@ -3,7 +3,7 @@ model: "gpt-4o-realtime-preview-2024-10-01"  # For OpenAI
 test_type: "quality"
 dataset_name: "alpaca_audio_test"
 turn_detection_type: "ServerVAD"
-n_questions: 200
+n_questions: 10
 n_iterations: 1
-endpoint_region: "swedencentral"
-deployment_name: "3paudiotexttest06"  # Optional, for prod. For JPE, comment out.
+endpoint_region: "japaneast"
+# deployment_name: "3paudiotexttest06"  # Optional, for prod. For JPE, comment out.
